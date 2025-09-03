@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
-import { apiPrediccionesUsuario } from "../api";
+import { apiPrediccionesUsuario, apiRanking } from "../api";
 
 export default function Scoreboard({ userId, disabled, usuarios = [] }) {
     const [userSel, setUserSel] = useState(userId || "");
     const [data, setData] = useState({ total: 0, resultados: [] });
+    const [ranking, setRanking] = useState([]);
+    const [auto, setAuto] = useState(
+        Boolean(Number(import.meta.env.VITE_RANKING_POLL_MS || 0))
+    );
+    const pollMs = Number(import.meta.env.VITE_RANKING_POLL_MS || 0);
 
     useEffect(() => {
         if (userId) setUserSel(userId);
     }, [userId]);
 
-    const load = async (uid) => {
+    const loadUser = async (uid) => {
         if (!uid) return;
         try {
             const { data } = await apiPrediccionesUsuario(uid);
@@ -19,9 +24,27 @@ export default function Scoreboard({ userId, disabled, usuarios = [] }) {
         }
     };
 
+    const loadRanking = async () => {
+        try {
+            const { data } = await apiRanking();
+            setRanking(data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     useEffect(() => {
-        if (userSel) load(userSel);
+        loadRanking();
+    }, []);
+    useEffect(() => {
+        if (userSel) loadUser(userSel);
     }, [userSel]);
+
+    useEffect(() => {
+        if (!auto || pollMs <= 0) return;
+        const id = setInterval(loadRanking, pollMs);
+        return () => clearInterval(id);
+    }, [auto, pollMs]);
 
     return (
         <section className="card">
@@ -33,7 +56,7 @@ export default function Scoreboard({ userId, disabled, usuarios = [] }) {
                 </div>
             )}
 
-            <div className="row">
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
                 <label>Usuario:</label>
                 <select
                     value={userSel}
@@ -41,21 +64,30 @@ export default function Scoreboard({ userId, disabled, usuarios = [] }) {
                 >
                     <option value="">-- Selecciona --</option>
                     {usuarios.map((u) => (
-                        <option key={u._id} value={u._id}>
+                        <option key={u._id || u.id} value={u._id || u.id}>
                             {u.nombre}
                         </option>
                     ))}
                 </select>
-                <button disabled={!userSel} onClick={() => load(userSel)}>
+                <button disabled={!userSel} onClick={() => loadUser(userSel)}>
                     Refrescar
                 </button>
+                <button onClick={loadRanking}>Actualizar ranking</button>
+                <label style={{ marginLeft: 8 }}>
+                    <input
+                        type="checkbox"
+                        checked={auto}
+                        onChange={(e) => setAuto(e.target.checked)}
+                    />{" "}
+                    Autorefrescar
+                </label>
             </div>
 
             <div className="score-total">
                 Total: <strong>{data.total ?? 0}</strong> pts
             </div>
 
-            <div className="table">
+            <div className="table" style={{ marginBottom: 16 }}>
                 <div className="thead">
                     <div>Partido</div>
                     <div>Tu predicción</div>
@@ -76,6 +108,28 @@ export default function Scoreboard({ userId, disabled, usuarios = [] }) {
                                 {r.partido?.resultado?.visitante ?? "-"}
                             </div>
                             <div className="score">{r.puntos ?? "-"}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <h3 style={{ marginTop: 0 }}>🏆 Ranking global</h3>
+            <div className="table">
+                <div className="thead">
+                    <div>#</div>
+                    <div>Usuario</div>
+                    <div>Total</div>
+                    <div>Exactos</div>
+                    <div>Tendencias</div>
+                </div>
+                <div className="tbody">
+                    {ranking.map((r, i) => (
+                        <div className="trow" key={r.usuarioId}>
+                            <div>{i + 1}</div>
+                            <div>{r.nombre}</div>
+                            <div className="score">{r.total}</div>
+                            <div className="score">{r.exactos}</div>
+                            <div className="score">{r.tendencias}</div>
                         </div>
                     ))}
                 </div>

@@ -1,20 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiCrearPrediccion, apiListPartidos } from "../api";
+import { apiCrearPrediccion, apiListPartidos, apiListJornadas } from "../api";
 import PredictionRow from "./PredictionRow";
 
 export default function MatchList({ userId, disabled }) {
     const [partidos, setPartidos] = useState([]);
-    const [preds, setPreds] = useState({}); // { partidoId: {local, visitante} }
+    const [preds, setPreds] = useState({});
+    const [jornadas, setJornadas] = useState([]);
+    const [filtroJornada, setFiltroJornada] = useState("");
+
     const canSubmit = useMemo(
         () => !disabled && Object.keys(preds).length > 0,
         [disabled, preds]
     );
 
+    const loadPartidos = async (jid) => {
+        const { data } = await apiListPartidos(
+            jid ? { jornadaId: jid } : undefined
+        );
+        setPartidos(data || []);
+    };
+
     useEffect(() => {
-        apiListPartidos()
-            .then((r) => setPartidos(r.data || []))
-            .catch(() => setPartidos([]));
+        apiListJornadas()
+            .then((r) => setJornadas(r.data || []))
+            .catch(() => setJornadas([]));
+        loadPartidos();
     }, []);
+
+    useEffect(() => {
+        if (filtroJornada) loadPartidos(filtroJornada);
+        else loadPartidos();
+    }, [filtroJornada]);
 
     const onChange = (partidoId, campo, val) => {
         setPreds((p) => ({
@@ -30,8 +46,8 @@ export default function MatchList({ userId, disabled }) {
             await Promise.all(
                 ops.map(([partidoId, pred]) =>
                     apiCrearPrediccion({
-                        usuarioId: userId,
-                        partidoId,
+                        usuarioId: Number(userId) || userId,
+                        partidoId: Number(partidoId) || partidoId,
                         prediccion: pred,
                     })
                 )
@@ -51,6 +67,21 @@ export default function MatchList({ userId, disabled }) {
                 </div>
             )}
 
+            <div className="row" style={{ gap: 8, marginBottom: 8 }}>
+                <label>Jornada:</label>
+                <select
+                    value={filtroJornada}
+                    onChange={(e) => setFiltroJornada(e.target.value)}
+                >
+                    <option value="">Todas</option>
+                    {jornadas.map((j) => (
+                        <option key={j.id} value={j.id}>
+                            {j.nombre}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
             <div className="table">
                 <div className="thead">
                     <div>Fecha/Hora</div>
@@ -60,14 +91,18 @@ export default function MatchList({ userId, disabled }) {
                     <div>Resultado real</div>
                 </div>
                 <div className="tbody">
-                    {partidos.map((p) => (
-                        <PredictionRow
-                            key={p._id}
-                            partido={p}
-                            value={preds[p._id]}
-                            onChange={onChange}
-                        />
-                    ))}
+                    {partidos.map((p) => {
+                        const pid = p._id || p.id;
+                        return (
+                            <PredictionRow
+                                key={pid}
+                                pid={pid}
+                                partido={p}
+                                value={preds[pid]}
+                                onChange={onChange}
+                            />
+                        );
+                    })}
                 </div>
             </div>
 

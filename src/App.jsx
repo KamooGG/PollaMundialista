@@ -27,8 +27,9 @@ export default function App() {
                 nombre: userName,
                 email: `${crypto.randomUUID()}@mock.local`,
             });
-            setUserId(data._id);
+            setUserId(data._id || data.id); // soporta mongo/prisma
             setUserName(data.nombre);
+
             setUsuarios((prev) => [...prev, data]);
         } catch (err) {
             alert(err?.response?.data?.error || "Error creando usuario");

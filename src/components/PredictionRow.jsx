@@ -1,11 +1,20 @@
-export default function PredictionRow({ partido, value = {}, onChange }) {
+export default function PredictionRow({ partido, pid, value = {}, onChange }) {
     const fecha = new Date(partido.fecha);
     const fechaStr = isNaN(fecha) ? "-" : fecha.toLocaleString();
-    const res = partido.resultado || {};
+    const resLocal = partido.resultadoLocal ?? partido.resultado?.local ?? null;
+    const resVisitante =
+        partido.resultadoVisitante ?? partido.resultado?.visitante ?? null;
+
+    const lockAheadMin = Number(import.meta.env.VITE_LOCK_AHEAD_MINUTES || 0);
+    const locked =
+        !isNaN(fecha) && Date.now() >= fecha.getTime() - lockAheadMin * 60000;
 
     return (
         <div className="trow">
-            <div>{fechaStr}</div>
+            <div>
+                {fechaStr}{" "}
+                {locked && <span className="badge badge-closed">Cerrado</span>}
+            </div>
             <div className="team">{partido.local}</div>
             <div className="team">{partido.visitante}</div>
             <div className="pred">
@@ -14,9 +23,8 @@ export default function PredictionRow({ partido, value = {}, onChange }) {
                     min="0"
                     placeholder="L"
                     value={value.local ?? ""}
-                    onChange={(e) =>
-                        onChange(partido._id, "local", e.target.value)
-                    }
+                    onChange={(e) => onChange(pid, "local", e.target.value)}
+                    disabled={locked}
                 />
                 <span>-</span>
                 <input
@@ -24,15 +32,14 @@ export default function PredictionRow({ partido, value = {}, onChange }) {
                     min="0"
                     placeholder="V"
                     value={value.visitante ?? ""}
-                    onChange={(e) =>
-                        onChange(partido._id, "visitante", e.target.value)
-                    }
+                    onChange={(e) => onChange(pid, "visitante", e.target.value)}
+                    disabled={locked}
                 />
             </div>
             <div className="score">
-                {res?.local ?? "-"}
+                {resLocal ?? "-"}
                 <span>-</span>
-                {res?.visitante ?? "-"}
+                {resVisitante ?? "-"}
             </div>
         </div>
     );
