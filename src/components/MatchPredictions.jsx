@@ -3,8 +3,12 @@ import { useEffect, useState } from "react";
 export default function MatchPredictions({ partidoId, fetcher }) {
     const [data, setData] = useState(null);
     const load = async () => {
-        const { data } = await fetcher(partidoId);
-        setData(data);
+        const { data: _data } = await fetcher(partidoId) // si fetcher devuelve axios response
+            .catch(async (e) => {
+                // si fetcher ya devuelve json directo (no axios), úsalo tal cual
+                return { data: await fetcher(partidoId) };
+            });
+        setData(_data || _data); // soporta ambas formas
     };
     useEffect(() => {
         load();

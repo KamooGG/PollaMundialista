@@ -22,11 +22,12 @@ export default function AdminResults() {
     const [showPredsFor, setShowPredsFor] = useState(null);
 
     const loadJornadas = async () => {
-        const { data } = await apiListJornadas();
+        const data = await apiListJornadas();
         setJornadas(data || []);
     };
+
     const loadPartidos = async (jid) => {
-        const { data } = await apiListPartidos(
+        const data = await apiListPartidos(
             jid ? { jornadaId: jid } : undefined
         );
         setPartidos(data || []);

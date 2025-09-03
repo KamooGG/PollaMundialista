@@ -14,7 +14,7 @@ export default function MatchList({ userId, disabled }) {
     );
 
     const loadPartidos = async (jid) => {
-        const { data } = await apiListPartidos(
+        const data = await apiListPartidos(
             jid ? { jornadaId: jid } : undefined
         );
         setPartidos(data || []);
@@ -22,7 +22,7 @@ export default function MatchList({ userId, disabled }) {
 
     useEffect(() => {
         apiListJornadas()
-            .then((r) => setJornadas(r.data || []))
+            .then(setJornadas)
             .catch(() => setJornadas([]));
         loadPartidos();
     }, []);

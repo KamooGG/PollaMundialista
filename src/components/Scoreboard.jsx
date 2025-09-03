@@ -17,7 +17,7 @@ export default function Scoreboard({ userId, disabled, usuarios = [] }) {
     const loadUser = async (uid) => {
         if (!uid) return;
         try {
-            const { data } = await apiPrediccionesUsuario(uid);
+            const data = await apiPrediccionesUsuario(uid);
             setData(data);
         } catch (err) {
             alert(err?.response?.data?.error || "Error cargando puntaje");
@@ -26,7 +26,7 @@ export default function Scoreboard({ userId, disabled, usuarios = [] }) {
 
     const loadRanking = async () => {
         try {
-            const { data } = await apiRanking();
+            const data = await apiRanking();
             setRanking(data);
         } catch (err) {
             console.error(err);
